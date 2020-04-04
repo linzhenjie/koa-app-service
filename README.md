@@ -30,6 +30,7 @@ const routes = [
   }
 ]
 
+//这里的配置可以写到配置文件里
 app.configure({
   port: 3001,
   controllerPath: path.join(__dirname, './app/controllers'),
@@ -54,10 +55,12 @@ app.listen()
 
 ## use mysql
 
-```
+```js
+
+const app = require('koa-app-service');
 const mysql = require('./libs/mysql')
 
-##这里的配置可以写到系统环境配置立
+//这里的配置可以写到系统环境配置
 app.register('mysql', mysql, {
   connectionLimit: 10,
   database: 'test',
@@ -68,8 +71,10 @@ app.register('mysql', mysql, {
 })
 ```
 
-```
+```js
+
 //libs/mysql.js
+//示例，主要init方法做初始化
 
 const mysql = require('mysql')
 
@@ -117,23 +122,42 @@ export default {
   }
 }
 ```
-```
+
+```js
 //app/service/admin.js
 const mysql = require('koa-app-service').mysql
 
 export default {
-  async checkLogin(username, password) {
-    const res = await mysql.query(
-      'select id from user_info where username = ? and password = ?',
-      username,
-      password
+  async login(ctx) {
+    const { request, services } = ctx
+    const res = await services.admin.checkLogin(
+      request.body.username,
+      request.body.password
     )
-    return res.length > 0
+    ctx.body = { code: 0, msg: '登录成功', data: res }
   }
 }
 ```
 
+```js
+import app from 'koa-app-service'
 
+export default {
+  async checkLogin(username, password) {
+    if (username.length < 3) throw new Error('用户名输入错误')
+    if (password.length < 6) throw new Error('密码输入错误')
+    const res = await app
+      .load('db')
+      .query(
+        'select id from user_info where username = ? and password = ?',
+        username,
+        password
+      )
+    if (res.length <= 0) throw new Error('用户名或密码错误')
+    return { id: res[0].id }
+  }
+}
+```
 
 
 
